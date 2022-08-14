@@ -4,6 +4,8 @@ use fitness::AgileFitness;
 use mutation::crossover::AgileCrossBreeder;
 use paramset::ParamSet;
 
+use crate::model::raytrace;
+
 mod array;
 mod builder;
 mod fitness;
@@ -19,8 +21,18 @@ const MUTATION_RATE: f64 = 0.05;
 const REINSERTION_RATIO: f64 = 0.7;
 
 fn main() {
-	println!("min: {}", ParamSet::default());
-	println!("max: {}", ParamSet::nth(ParamSet::MAX_POSSIBILITIES));
+	{
+		let def = ParamSet::default();
+		let ray = raytrace(def);
+		let sum = ray.summarise();
+		println!("min: {def}\n{sum} = {ray:?}");
+	}
+	{
+		let def = ParamSet::nth(ParamSet::MAX_POSSIBILITIES);
+		let ray = raytrace(def);
+		let sum = ray.summarise();
+		println!("max: {def}\n{sum} = {ray:?}");
+	}
 
 	let initial_population = build_population()
 		.with_genome_builder(builder::RandomBuilder)
@@ -63,7 +75,7 @@ fn main() {
 				let evaluated_population = step.result.evaluated_population;
 				let best_solution = step.result.best_solution;
 				println!(
-					"Step: generation: {}, average_fitness: {}, best fitness: {}, duration: {}, processing_time: {}",
+					"Step: generation: {:04}, average_fitness: {}, best fitness: {}, duration: {}, processing_time: {}",
 					step.iteration,
 					evaluated_population.average_fitness(),
 					best_solution.solution.fitness,
