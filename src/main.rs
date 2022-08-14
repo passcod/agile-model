@@ -52,8 +52,8 @@ impl Display for ParamSet {
 }
 
 impl ParamSet {
-	pub const POSSIBLE_LAYERS: u64 = 256;
-	pub const POSSIBLE_PARTS: u64 = 9;
+	pub const POSSIBLE_LAYERS: u64 = u8::MAX as _;
+	pub const POSSIBLE_PARTS: u64 = PARTITION_THICKNESSES.len() as _;
 
 	pub const LAYERS: usize = 10;
 	pub const MINIMUM_RI: u8 = 34; // 0.99 (None) + 0.34 = 1.33 (water)
@@ -63,7 +63,9 @@ impl ParamSet {
 	pub const POSSIBLE_RIS: u64 = (1 + Self::MAXIMUM_RI - Self::MINIMUM_RI) as _;
 
 	// -1 because because it overflows the possibility space!
-	pub const MAX_POSSIBILITIES: u64 = 256 * 9 * 18_u64.pow(10) - 1;
+	pub const MAX_POSSIBILITIES: u64 =
+		Self::POSSIBLE_LAYERS * Self::POSSIBLE_PARTS * Self::POSSIBLE_RIS.pow(Self::LAYERS as _)
+			- 1;
 
 	/// Generate the Nth parameter set.
 	///
@@ -80,7 +82,8 @@ impl ParamSet {
 		let mut ris = [None::<NonZeroU8>; Self::LAYERS];
 		for ri in &mut ris {
 			*ri = NonZeroU8::new(
-				ri.map_or(Self::MINIMUM_RI, |u| u.get()) + u8::try_from(n % Self::POSSIBLE_RIS).unwrap(),
+				ri.map_or(Self::MINIMUM_RI, |u| u.get())
+					+ u8::try_from(n % Self::POSSIBLE_RIS).unwrap(),
 			);
 
 			if n == 0 {
