@@ -1,5 +1,9 @@
 use paramset::ParamSet;
 
+mod fitness;
+mod genotype;
+mod model;
+mod mutation;
 mod paramset;
 
 fn main() {

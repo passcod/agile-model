@@ -99,4 +99,14 @@ impl ParamSet {
 			layers: ris,
 		}
 	}
+
+	/// Length of the layers "array".
+	pub fn len(self) -> usize {
+		self.layers
+			.iter()
+			.enumerate()
+			.filter(|(_, layer)| layer.is_none())
+			.next()
+			.map_or(0, |(n, _)| n)
+	}
 }
