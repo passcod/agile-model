@@ -1,6 +1,6 @@
-use std::{f64::consts::PI, cmp::Ordering};
+use std::{cmp::Ordering, f64::consts::PI};
 
-use crate::paramset::{ParamSet, model_ri_to_real_ri};
+use crate::paramset::{model_ri_to_real_ri, ParamSet};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Performance {
@@ -80,8 +80,8 @@ pub fn raytrace(params: ParamSet) -> Performance {
 		.unzip();
 	let total_bottomed = bottom_angles.len();
 	let total_travel: Microns = bottom_travel.into_iter().sum();
-	let average_angle: Radians = bottom_angles.iter().map(|a| a.abs()).sum::<Radians>()
-		/ (total_bottomed as Radians);
+	let average_angle: Radians =
+		bottom_angles.iter().map(|a| a.abs()).sum::<Radians>() / (total_bottomed as Radians);
 
 	Performance {
 		exit_ratio: ((total_bottomed * (u16::MAX as usize)) / total_rays) as _,
@@ -208,19 +208,25 @@ impl Pos {
 	///
 	/// Also does total internal reflection as needed.
 	pub fn refract_into(&mut self, new_ri: u8) {
-		fn snells(old_ri: u8, new_ri: u8, angle: Radians) -> Radians {
-			let old_ri = model_ri_to_real_ri(old_ri);
-			let new_ri = model_ri_to_real_ri(new_ri);
-			((old_ri / new_ri) * angle.sin()).asin()
+		if self.dir.signum() == 0.0 || new_ri == self.ri {
+			// no refraction happens
+		} else {
+			match snells(self.ri, new_ri, self.dir) {
+				(Snells::Refracted, angle) => {
+					self.dir = angle;
+				}
+				(Snells::Reflected, angle) => {
+					self.dir = angle;
+					self.going_down = !self.going_down;
+				}
+				(Snells::Critical, angle) => {
+					self.dir = angle;
+					self.going_down = true; // not really, but ah well
+				}
+			}
 		}
 
-		match (self.dir.signum() as i8, self.going_down, new_ri.cmp(&self.ri)) {
-			(_, _, Ordering::Equal) => {
-				// no refraction happens
-			}
-			(1, true, Ordering::Greater) => {}
-			_ => todo!()
-		}
+		self.ri = new_ri;
 	}
 
 	/// Takes vertical distances to boundaries above and below,
@@ -230,4 +236,26 @@ impl Pos {
 	pub fn travel_to_next_boundary(&mut self, up: Microns, down: Microns) -> Microns {
 		todo!("travel")
 	}
+}
+
+fn snells(old_ri: u8, new_ri: u8, angle: Radians) -> (Snells, Radians) {
+	let old_ri = model_ri_to_real_ri(old_ri);
+	let new_ri = model_ri_to_real_ri(new_ri);
+
+	let new_sin = (old_ri / new_ri) * angle.sin();
+	let abs_sin = new_sin.abs();
+	if abs_sin < 1.0 {
+		(Snells::Refracted, new_sin.asin())
+	} else if abs_sin > 1.0 {
+		(Snells::Reflected, -angle)
+	} else {
+		(Snells::Critical, angle.signum() * (PI / 2.0))
+	}
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Snells {
+	Refracted,
+	Critical,
+	Reflected,
 }
