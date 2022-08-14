@@ -63,7 +63,7 @@ fn main() {
 				let evaluated_population = step.result.evaluated_population;
 				let best_solution = step.result.best_solution;
 				println!(
-					"Step: generation: {}, average_fitness: {}, best fitness: {}, duration: {:?}, processing_time: {:?}",
+					"Step: generation: {}, average_fitness: {}, best fitness: {}, duration: {}, processing_time: {}",
 					step.iteration,
 					evaluated_population.average_fitness(),
 					best_solution.solution.fitness,
@@ -76,7 +76,7 @@ fn main() {
 				let best_solution = step.result.best_solution;
 				println!("{}", stop_reason);
 				println!(
-					"Final result after {:?}: generation: {}, best solution with fitness {} found in generation {}, processing_time: {:?}",
+					"Final result after {}: generation: {}, best solution with fitness {} found in generation {}, processing_time: {}",
 					duration,
 					step.iteration,
 					best_solution.solution.fitness,

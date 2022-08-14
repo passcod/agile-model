@@ -26,14 +26,15 @@ pub struct Performance {
 
 impl Performance {
 	pub fn summarise(self) -> u64 {
-		let mut all = [0_u8; 8];
-		all[0..4].copy_from_slice(&self.exit_ratio.to_be_bytes());
-		all[4..8].copy_from_slice(&u16::MAX.saturating_sub(self.exit_angle).to_be_bytes());
-		all[8..].copy_from_slice(&u32::MAX.saturating_sub(self.light_travel).to_be_bytes());
-		u64::from_be_bytes(all)
+		let one = self.exit_ratio.to_be_bytes();
+		let two = u16::MAX.saturating_sub(self.exit_angle).to_be_bytes();
+		let three = u32::MAX.saturating_sub(self.light_travel).to_be_bytes();
+		u64::from_be_bytes([
+			one[0], one[1], two[0], two[1], three[0], three[1], three[2], three[3],
+		])
 	}
 }
 
-pub fn raytrace(_params: ParamSet) -> Performance {
+pub fn raytrace(params: ParamSet) -> Performance {
 	todo!()
 }
