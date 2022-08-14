@@ -2,6 +2,11 @@ use std::{fmt::Display, num::NonZeroU8};
 
 use genevo::genetic::Genotype;
 
+/// Convert from model RI to real RI
+pub fn model_ri_to_real_ri(model_ri: u8) -> f64 {
+	f64::from(model_ri) * 0.01 + 0.99
+}
+
 // Set of usable paritition thicknesses.
 ///
 /// These are in tenths of millimetres, like in [`ParamSet`].
@@ -47,7 +52,7 @@ impl Display for ParamSet {
 		write!(f, "layer:{layers_mm:.02}mm part:{parts_mm:.02}mm  | ")?;
 		for ri in &self.layers {
 			if let Some(ri) = ri {
-				let ri = f32::from(ri.get()) * 0.01 + 0.99;
+				let ri = model_ri_to_real_ri(ri.get());
 				write!(f, "{ri:.02} ")?;
 			} else {
 				break;

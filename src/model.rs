@@ -1,6 +1,6 @@
-use std::f64::consts::PI;
+use std::{f64::consts::PI, cmp::Ordering};
 
-use crate::paramset::ParamSet;
+use crate::paramset::{ParamSet, model_ri_to_real_ri};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Performance {
@@ -13,7 +13,7 @@ pub struct Performance {
 
 	/// Average of exit angles (to the normal) for rays that exit at the bottom.
 	///
-	/// In milliradians.
+	/// In 10000th radians.
 	///
 	/// Lower is better.
 	pub exit_angle: u16,
@@ -38,12 +38,12 @@ impl Performance {
 }
 
 type Microns = u64; // forwards from leftmost
-type Millirads = i64; // negative is backwards
+type Radians = f64; // negative is backwards
 
 const ENTRY_INTERVAL: Microns = 1000;
-const ANGLE_INTERVAL: Millirads = ((PI / 180.0) * 1000.0) as Millirads;
-const ANGLE_MAX: Millirads = ((PI / 2.0) * 1000.0) as Millirads;
-const ANGLE_MIN: Millirads = -ANGLE_MAX;
+const ANGLE_INTERVAL: Radians = PI / 180.0;
+const ANGLE_MAX: Radians = PI / 2.0;
+const ANGLE_MIN: Radians = -ANGLE_MAX;
 
 fn top_width(_: ParamSet) -> Microns {
 	104 * 1000
@@ -60,7 +60,7 @@ pub fn raytrace(params: ParamSet) -> Performance {
 	let mut entry: Microns = 0;
 	while entry <= top_width {
 		entry += ENTRY_INTERVAL;
-		let mut angle: Millirads = ANGLE_MIN;
+		let mut angle: Radians = ANGLE_MIN;
 		while angle <= ANGLE_MAX {
 			angle += ANGLE_INTERVAL;
 			traces.push(trace_one(params, entry, angle));
@@ -68,7 +68,7 @@ pub fn raytrace(params: ParamSet) -> Performance {
 	}
 
 	let total_rays = traces.len();
-	let (bottom_angles, bottom_travel): (Vec<Millirads>, Vec<Microns>) = traces
+	let (bottom_angles, bottom_travel): (Vec<Radians>, Vec<Microns>) = traces
 		.iter()
 		.filter_map(|t| {
 			if let Traced::BottomExit { angle, travel } = t {
@@ -80,12 +80,12 @@ pub fn raytrace(params: ParamSet) -> Performance {
 		.unzip();
 	let total_bottomed = bottom_angles.len();
 	let total_travel: Microns = bottom_travel.into_iter().sum();
-	let average_angle: Millirads = bottom_angles.iter().sum::<Millirads>()
-		/ Millirads::try_from(total_bottomed).unwrap_or(Millirads::MAX);
+	let average_angle: Radians = bottom_angles.iter().map(|a| a.abs()).sum::<Radians>()
+		/ (total_bottomed as Radians);
 
 	Performance {
 		exit_ratio: ((total_bottomed * (u16::MAX as usize)) / total_rays) as _,
-		exit_angle: average_angle as _,
+		exit_angle: (average_angle * 10000.0) as _,
 		light_travel: total_travel as _,
 	}
 }
@@ -93,10 +93,10 @@ pub fn raytrace(params: ParamSet) -> Performance {
 #[derive(Clone, Copy, Debug)]
 enum Traced {
 	TopExit,
-	BottomExit { angle: Millirads, travel: Microns },
+	BottomExit { angle: Radians, travel: Microns },
 }
 
-fn trace_one(params: ParamSet, entry_point: Microns, entry_angle: Millirads) -> Traced {
+fn trace_one(params: ParamSet, entry_point: Microns, entry_angle: Radians) -> Traced {
 	let part_um = mm_tenths_to_microns(params.partitions_thickness);
 	let layer_um = mm_tenths_to_microns(params.layers_thickness).saturating_add(3_000);
 
@@ -185,7 +185,7 @@ fn trace_one(params: ParamSet, entry_point: Microns, entry_angle: Millirads) -> 
 
 const RI_AIR: u8 = 1;
 
-#[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, Debug)]
 struct Pos {
 	/// Horizontal position from leftmost
 	pub x: Microns,
@@ -197,7 +197,7 @@ struct Pos {
 	pub ri: u8,
 
 	/// Current direction (from normal)
-	pub dir: Millirads,
+	pub dir: Radians,
 
 	/// Vertical direction
 	pub going_down: bool,
@@ -208,7 +208,19 @@ impl Pos {
 	///
 	/// Also does total internal reflection as needed.
 	pub fn refract_into(&mut self, new_ri: u8) {
-		todo!("refraction")
+		fn snells(old_ri: u8, new_ri: u8, angle: Radians) -> Radians {
+			let old_ri = model_ri_to_real_ri(old_ri);
+			let new_ri = model_ri_to_real_ri(new_ri);
+			((old_ri / new_ri) * angle.sin()).asin()
+		}
+
+		match (self.dir.signum() as i8, self.going_down, new_ri.cmp(&self.ri)) {
+			(_, _, Ordering::Equal) => {
+				// no refraction happens
+			}
+			(1, true, Ordering::Greater) => {}
+			_ => todo!()
+		}
 	}
 
 	/// Takes vertical distances to boundaries above and below,
