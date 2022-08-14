@@ -1,6 +1,6 @@
 use std::num::NonZeroU8;
 
-use crate::paramset::{ParamSet, normalise_partition_thickness};
+use crate::paramset::{normalise_partition_thickness, ParamSet};
 
 pub mod breeder;
 pub mod crossover;
@@ -40,7 +40,11 @@ fn apply_value(genome: &mut ParamSet, index: usize, new: u8) {
 			genome.partitions_thickness = normalise_partition_thickness(new);
 		}
 		n => {
-			genome.layers[n - 3] = NonZeroU8::new(if new == 0 { 0 } else { new.max(ParamSet::MINIMUM_RI) });
+			genome.layers[n - 3] = NonZeroU8::new(if new == 0 {
+				0
+			} else {
+				new.max(ParamSet::MINIMUM_RI)
+			});
 		}
 	}
 }

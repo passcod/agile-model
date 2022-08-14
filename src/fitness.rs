@@ -11,7 +11,11 @@ impl FitnessFunction<ParamSet, u64> for AgileFitness {
 	}
 
 	fn average(&self, a: &[u64]) -> u64 {
-		let sum = a.iter().copied().reduce(|sum, e| sum.saturating_add(e)).unwrap_or_default();
+		let sum = a
+			.iter()
+			.copied()
+			.reduce(|sum, e| sum.saturating_add(e))
+			.unwrap_or_default();
 		let len = a.len().try_into().unwrap_or(u64::MAX);
 		sum / len
 	}

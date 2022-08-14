@@ -23,11 +23,11 @@ pub fn normalise_partition_thickness(thicc: u8) -> u8 {
 			Ok(n) => PARTITION_THICKNESSES[n],
 			Err(closest_up) => {
 				let dist_up = PARTITION_THICKNESSES[closest_up].saturating_sub(thicc);
-				let dist_down = thicc.saturating_sub(PARTITION_THICKNESSES[closest_up-1]);
+				let dist_down = thicc.saturating_sub(PARTITION_THICKNESSES[closest_up - 1]);
 				if dist_up > dist_down {
 					PARTITION_THICKNESSES[closest_up]
 				} else {
-					PARTITION_THICKNESSES[closest_up-1]
+					PARTITION_THICKNESSES[closest_up - 1]
 				}
 			}
 		}
