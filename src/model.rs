@@ -6,17 +6,17 @@ use crate::paramset::{model_ri_to_real_ri, ParamSet};
 pub struct Performance {
 	/// Proportion of rays that exit at the bottom.
 	///
-	/// Calculated as {bottom exit rays} * u16::MAX / {total rays}.
+	/// Calculated as {bottom exit rays} * u32::MAX / {total rays}.
 	///
 	/// Higher is better.
-	pub exit_ratio: u16,
+	pub exit_ratio: u32,
 
 	/// Average of exit angles (to the normal) for rays that exit at the bottom.
 	///
 	/// In 10000th radians.
 	///
 	/// Lower is better.
-	pub exit_angle: u16,
+	pub exit_angle: u32,
 
 	/// Total distance light travels inside the lens.
 	///
@@ -29,10 +29,10 @@ pub struct Performance {
 impl Performance {
 	pub fn summarise(self) -> u64 {
 		let one = self.exit_ratio as u64;
-		let two = u16::MAX.saturating_sub(self.exit_angle) as u64;
+		let two = u32::MAX.saturating_sub(self.exit_angle) as u64;
 		let three = u32::MAX.saturating_sub(self.light_travel) as u64;
 
-		one * 3 + two * 2 + three
+		one * 10 + two * 5 + three
 	}
 }
 
@@ -83,7 +83,7 @@ pub fn raytrace(params: ParamSet) -> Performance {
 		bottom_angles.iter().map(|a| a.abs()).sum::<Radians>() / (total_bottomed as Radians);
 
 	Performance {
-		exit_ratio: ((total_bottomed * (u16::MAX as usize)) / total_rays) as _,
+		exit_ratio: ((total_bottomed * (u32::MAX as usize)) / total_rays) as _,
 		exit_angle: (average_angle * 10000.0) as _,
 		light_travel: total_travel as _,
 	}
