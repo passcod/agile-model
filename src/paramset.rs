@@ -1,5 +1,7 @@
 use std::{fmt::Display, num::NonZeroU8};
 
+use genevo::genetic::Genotype;
+
 // Set of usable paritition thicknesses.
 ///
 /// These are in tenths of millimetres, like in [`ParamSet`].
@@ -26,6 +28,10 @@ pub struct ParamSet {
 	/// There are 10 possible layers; those that are Some are the ones defined
 	/// for this parameter set.
 	pub layers: [Option<NonZeroU8>; Self::LAYERS],
+}
+
+impl Genotype for ParamSet {
+	type Dna = u8;
 }
 
 impl Default for ParamSet {

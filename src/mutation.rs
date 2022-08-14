@@ -2,8 +2,9 @@ use std::num::NonZeroU8;
 
 use crate::paramset::ParamSet;
 
-mod breeder;
-mod random;
+pub mod breeder;
+pub mod crossover;
+pub mod random;
 
 fn prep<R>(genome: ParamSet, mutation_rate: f64, rng: &mut R) -> (usize, usize)
 where

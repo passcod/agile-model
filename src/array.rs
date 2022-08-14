@@ -1,24 +1,27 @@
 use std::num::NonZeroU8;
 
-use genevo::genetic::Genotype;
-
 use crate::paramset::ParamSet;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct Geno([u8; ParamSet::LAYERS + 2]);
+pub struct ParamArray([u8; ParamSet::LAYERS + 2]);
 
-impl Genotype for Geno {
-	type Dna = u8;
+impl Default for ParamArray {
+	fn default() -> Self {
+		ParamSet::default().into()
+	}
 }
 
-impl Genotype for ParamSet {
-	type Dna = u8;
+impl ParamArray {
+	/// Panics if index is out of bounds
+	pub fn set(&mut self, index: usize, value: u8) {
+		self.0[index] = value;
+	}
 }
 
 // Could probably transmute instead, with a fixed repr?
 
-impl From<Geno> for ParamSet {
-	fn from(geno: Geno) -> Self {
+impl From<ParamArray> for ParamSet {
+	fn from(geno: ParamArray) -> Self {
 		let field = geno.0;
 		let mut layers = [0; ParamSet::LAYERS];
 		layers.copy_from_slice(&field[2..]);
@@ -30,7 +33,7 @@ impl From<Geno> for ParamSet {
 	}
 }
 
-impl From<ParamSet> for Geno {
+impl From<ParamSet> for ParamArray {
 	fn from(params: ParamSet) -> Self {
 		let mut field = [0; ParamSet::LAYERS + 2];
 		field[0] = params.layers_thickness;
