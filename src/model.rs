@@ -28,12 +28,11 @@ pub struct Performance {
 
 impl Performance {
 	pub fn summarise(self) -> u64 {
-		let one = self.exit_ratio.to_be_bytes();
-		let two = u16::MAX.saturating_sub(self.exit_angle).to_be_bytes();
-		let three = u32::MAX.saturating_sub(self.light_travel).to_be_bytes();
-		u64::from_be_bytes([
-			one[0], one[1], two[0], two[1], three[0], three[1], three[2], three[3],
-		])
+		let one = self.exit_ratio as u64;
+		let two = u16::MAX.saturating_sub(self.exit_angle) as u64;
+		let three = u32::MAX.saturating_sub(self.light_travel) as u64;
+
+		one * 3 + two * 2 + three
 	}
 }
 
