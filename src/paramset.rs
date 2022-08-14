@@ -12,6 +12,28 @@ pub fn model_ri_to_real_ri(model_ri: u8) -> f64 {
 /// These are in tenths of millimetres, like in [`ParamSet`].
 pub const PARTITION_THICKNESSES: [u8; 9] = [2, 4, 6, 8, 10, 12, 15, 20, 30];
 
+/// From an arbitrary thickness, find the closest usable one.
+pub fn normalise_partition_thickness(thicc: u8) -> u8 {
+	if thicc <= PARTITION_THICKNESSES[0] {
+		PARTITION_THICKNESSES[0]
+	} else if thicc >= PARTITION_THICKNESSES[8] {
+		PARTITION_THICKNESSES[8]
+	} else {
+		match PARTITION_THICKNESSES.binary_search(&thicc) {
+			Ok(n) => PARTITION_THICKNESSES[n],
+			Err(closest_up) => {
+				let dist_up = PARTITION_THICKNESSES[closest_up].saturating_sub(thicc);
+				let dist_down = thicc.saturating_sub(PARTITION_THICKNESSES[closest_up-1]);
+				if dist_up > dist_down {
+					PARTITION_THICKNESSES[closest_up]
+				} else {
+					PARTITION_THICKNESSES[closest_up-1]
+				}
+			}
+		}
+	}
+}
+
 // Parameter set for an AGILE.
 ///
 /// This is optimised for struct size, instead of ease of use: it is 12 bytes.

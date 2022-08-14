@@ -1,6 +1,6 @@
 use std::num::NonZeroU8;
 
-use crate::paramset::ParamSet;
+use crate::paramset::{ParamSet, normalise_partition_thickness};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct ParamArray([u8; ParamSet::LAYERS + 2]);
@@ -37,7 +37,7 @@ impl From<ParamSet> for ParamArray {
 	fn from(params: ParamSet) -> Self {
 		let mut field = [0; ParamSet::LAYERS + 2];
 		field[0] = params.layers_thickness;
-		field[1] = params.partitions_thickness;
+		field[1] = normalise_partition_thickness(params.partitions_thickness);
 		field[2..].copy_from_slice(&params.layers.map(|n| n.map_or(0, |n| n.get())));
 		Self(field)
 	}

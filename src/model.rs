@@ -234,7 +234,10 @@ impl Pos {
 	///
 	/// Also does reflection as needed.
 	pub fn travel_to_next_boundary(&mut self, up: Microns, down: Microns) -> Microns {
-		todo!("travel")
+		let travel = self.y - down;
+		self.y = down;
+		travel
+		// todo!("travel")
 	}
 }
 
