@@ -31,7 +31,7 @@ fn apply_value(genome: &mut ParamSet, index: usize, new: u8) {
 	match index {
 		0 => {
 			let current_len = genome.len();
-			let new_len = new as usize;
+			let new_len = ParamSet::LAYERS.min((new as usize) % (ParamSet::LAYERS + 1));
 			if current_len < new_len {
 				genome.layers[current_len..new_len].fill(NonZeroU8::new(ParamSet::MINIMUM_RI));
 			} else if current_len > new_len {
