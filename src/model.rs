@@ -6,6 +6,11 @@ use geo::Point;
 use turtle::Turtle;
 use units::{mm_tenths_to_microns, Microns, Radians, RI_AIR};
 
+use self::{
+	refract::{denormalise_incidence, normalise_incidence},
+	turtle::QUARTER,
+};
+
 pub mod geo;
 pub mod refract;
 pub mod turtle;
@@ -47,8 +52,8 @@ impl Performance {
 
 const ENTRY_INTERVAL: Microns = 5_000;
 const ANGLE_INTERVAL: Radians = (PI / 180.0) / 5.0;
-const ANGLE_MAX: Radians = PI / 2.0;
-const ANGLE_MIN: Radians = -ANGLE_MAX;
+const ANGLE_MIN: Radians = denormalise_incidence(-QUARTER);
+const ANGLE_MAX: Radians = denormalise_incidence(QUARTER);
 
 pub fn raytrace(params: ParamSet) -> Performance {
 	let mut traces = Vec::with_capacity(18960);
@@ -115,7 +120,6 @@ fn trace_one(params: ParamSet, entry_point: Microns, entry_angle: Radians) -> Tr
 		},
 		ri: RI_AIR,
 		dir: entry_angle,
-		going_down: true,
 	};
 
 	let mut layer: usize = 0;
@@ -130,7 +134,7 @@ fn trace_one(params: ParamSet, entry_point: Microns, entry_angle: Radians) -> Tr
 		let so_far = ray.travel_to_next_boundary(boundary_above, boundary_below);
 		travel += so_far;
 
-		if ray.pos.y > lens_height || (ray.pos.y == lens_height && !ray.going_down) {
+		if ray.pos.y > lens_height || (ray.pos.y == lens_height && !ray.is_going_down()) {
 			break Traced::TopExit;
 		}
 
@@ -139,7 +143,9 @@ fn trace_one(params: ParamSet, entry_point: Microns, entry_angle: Radians) -> Tr
 			ray.refract_into(ParamSet::MAXIMUM_RI);
 			in_layer = false;
 
-			if ray.going_down {
+			if ray.is_horizontal() {
+				// no change
+			} else if ray.is_going_down() {
 				boundary_above = ray.pos.y;
 				boundary_below = ray.pos.y - part_um;
 			} else {
@@ -150,7 +156,9 @@ fn trace_one(params: ParamSet, entry_point: Microns, entry_angle: Radians) -> Tr
 			// refract into layer from partition
 			in_layer = true;
 
-			if ray.going_down {
+			if ray.is_horizontal() {
+				// no change
+			} else if ray.is_going_down() {
 				layer += 1;
 				boundary_above = ray.pos.y;
 				boundary_below = ray.pos.y - layer_um;
@@ -166,7 +174,7 @@ fn trace_one(params: ParamSet, entry_point: Microns, entry_angle: Radians) -> Tr
 				ray.refract_into(*ri);
 			} else {
 				break Traced::BottomExit {
-					angle: ray.dir,
+					angle: normalise_incidence(ray.dir),
 					travel,
 				};
 			}
@@ -174,7 +182,7 @@ fn trace_one(params: ParamSet, entry_point: Microns, entry_angle: Radians) -> Tr
 
 		if ray.pos.y == 0 {
 			break Traced::BottomExit {
-				angle: ray.dir,
+				angle: normalise_incidence(ray.dir),
 				travel,
 			};
 		}
