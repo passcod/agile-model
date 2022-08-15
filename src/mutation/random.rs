@@ -21,7 +21,7 @@ impl RandomGenomeMutation for ParamSet {
 	where
 		R: genevo::random::Rng + Sized,
 	{
-		let (genome_length, num_mutations) = prep(genome, mutation_rate, rng);
+		let (genome_length, num_mutations) = prep(mutation_rate, rng);
 
 		let mut mutated = genome;
 		for _ in 0..num_mutations {
