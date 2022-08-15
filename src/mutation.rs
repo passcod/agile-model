@@ -1,6 +1,6 @@
 use std::num::NonZeroU8;
 
-use crate::paramset::{normalise_partition_thickness, ParamSet};
+use crate::paramset::{normalise_partition_thickness, ParamSet, PARTITION_THICKNESSES};
 
 pub mod breeder;
 pub mod crossover;
@@ -15,11 +15,14 @@ where
 	(genome_length, num_mutations)
 }
 
+const PART_THICKNESS_RANGE: u8 =
+	PARTITION_THICKNESSES[PARTITION_THICKNESSES.len() - 1] - PARTITION_THICKNESSES[0];
+
 fn old_value(genome: ParamSet, index: usize) -> u8 {
 	match index {
 		0 => genome.len() as u8,
 		1 => genome.layers_thickness,
-		2 => genome.partitions_thickness,
+		2 => genome.partitions_thickness * (u8::MAX / PART_THICKNESS_RANGE),
 		n => genome.layers[n - 3].map_or(0, |ri| ri.get()),
 	}
 }
@@ -39,14 +42,13 @@ fn apply_value(genome: &mut ParamSet, index: usize, new: u8) {
 			genome.layers_thickness = new;
 		}
 		2 => {
-			genome.partitions_thickness = normalise_partition_thickness(new);
+			let new_part = (new * PART_THICKNESS_RANGE) / u8::MAX;
+			genome.partitions_thickness = normalise_partition_thickness(new_part);
 		}
 		n => {
-			genome.layers[n - 3] = NonZeroU8::new(if new == 0 {
-				0
-			} else {
-				new.max(ParamSet::MINIMUM_RI)
-			});
+			if let Some(ri) = &mut genome.layers[n - 3] {
+				*ri = unsafe { NonZeroU8::new_unchecked(new.max(ParamSet::MINIMUM_RI)) };
+			}
 		}
 	}
 }
