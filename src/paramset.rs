@@ -2,10 +2,7 @@ use std::{fmt::Display, num::NonZeroU8};
 
 use genevo::genetic::Genotype;
 
-/// Convert from model RI to real RI
-pub fn model_ri_to_real_ri(model_ri: u8) -> f64 {
-	f64::from(model_ri) * 0.01 + 0.99
-}
+use crate::model::units::{model_ri_to_real_ri, Microns};
 
 // Set of usable paritition thicknesses.
 ///
@@ -99,6 +96,9 @@ impl ParamSet {
 	pub const MAX_POSSIBILITIES: u64 =
 		Self::POSSIBLE_LAYERS * Self::POSSIBLE_PARTS * Self::POSSIBLE_RIS.pow(Self::LAYERS as _)
 			- 1;
+
+	pub const WIDTH_TOP: Microns = 104_000;
+	pub const WIDTH_BOTTOM: Microns = 52_000;
 
 	/// Generate the Nth parameter set.
 	///

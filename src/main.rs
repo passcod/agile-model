@@ -1,10 +1,9 @@
 use genevo::{ga::builder::EmptyGeneticAlgorithmBuilder, operator::prelude::*, prelude::*};
 
 use fitness::AgileFitness;
+use model::raytrace;
 use mutation::crossover::AgileCrossBreeder;
 use paramset::ParamSet;
-
-use crate::model::raytrace;
 
 mod array;
 mod builder;

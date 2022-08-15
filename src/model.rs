@@ -1,6 +1,13 @@
-use std::{cmp::Ordering, f64::consts::PI};
+use std::f64::consts::PI;
 
-use crate::paramset::{model_ri_to_real_ri, ParamSet};
+use crate::paramset::ParamSet;
+
+use geo::Pos;
+use units::{mm_tenths_to_microns, Microns, Radians, RI_AIR};
+
+pub mod geo;
+pub mod refract;
+pub mod units;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Performance {
@@ -36,28 +43,16 @@ impl Performance {
 	}
 }
 
-type Microns = u64; // forwards from leftmost
-type Radians = f64; // negative is backwards
-
 const ENTRY_INTERVAL: Microns = 1000;
 const ANGLE_INTERVAL: Radians = PI / 180.0;
 const ANGLE_MAX: Radians = PI / 2.0;
 const ANGLE_MIN: Radians = -ANGLE_MAX;
 
-fn top_width(_: ParamSet) -> Microns {
-	104 * 1000
-}
-
-fn mm_tenths_to_microns(mm10ths: u8) -> Microns {
-	(mm10ths as Microns) * 100
-}
-
 pub fn raytrace(params: ParamSet) -> Performance {
 	let mut traces = Vec::with_capacity(18960);
 
-	let top_width = top_width(params);
 	let mut entry: Microns = 0;
-	while entry <= top_width {
+	while entry <= ParamSet::WIDTH_TOP {
 		entry += ENTRY_INTERVAL;
 		let mut angle: Radians = ANGLE_MIN;
 		while angle <= ANGLE_MAX {
@@ -180,84 +175,4 @@ fn trace_one(params: ParamSet, entry_point: Microns, entry_angle: Radians) -> Tr
 			};
 		}
 	}
-}
-
-const RI_AIR: u8 = 1;
-
-#[derive(Clone, Copy, Default, Debug)]
-struct Pos {
-	/// Horizontal position from leftmost
-	pub x: Microns,
-
-	/// Vertical height
-	pub y: Microns,
-
-	/// Current RI
-	pub ri: u8,
-
-	/// Current direction (from normal)
-	pub dir: Radians,
-
-	/// Vertical direction
-	pub going_down: bool,
-}
-
-impl Pos {
-	/// Recomputes directions from the RI change at a boundary.
-	///
-	/// Also does total internal reflection as needed.
-	pub fn refract_into(&mut self, new_ri: u8) {
-		if self.dir.signum() == 0.0 || new_ri == self.ri {
-			// no refraction happens
-		} else {
-			match snells(self.ri, new_ri, self.dir) {
-				(Snells::Refracted, angle) => {
-					self.dir = angle;
-				}
-				(Snells::Reflected, angle) => {
-					self.dir = angle;
-					self.going_down = !self.going_down;
-				}
-				(Snells::Critical, angle) => {
-					self.dir = angle;
-					self.going_down = true; // not really, but ah well
-				}
-			}
-		}
-
-		self.ri = new_ri;
-	}
-
-	/// Takes vertical distances to boundaries above and below,
-	/// outputs travel distance.
-	///
-	/// Also does reflection as needed.
-	pub fn travel_to_next_boundary(&mut self, up: Microns, down: Microns) -> Microns {
-		let travel = self.y - down;
-		self.y = down;
-		travel
-		// todo!("travel")
-	}
-}
-
-fn snells(old_ri: u8, new_ri: u8, angle: Radians) -> (Snells, Radians) {
-	let old_ri = model_ri_to_real_ri(old_ri);
-	let new_ri = model_ri_to_real_ri(new_ri);
-
-	let new_sin = (old_ri / new_ri) * angle.sin();
-	let abs_sin = new_sin.abs();
-	if abs_sin < 1.0 {
-		(Snells::Refracted, new_sin.asin())
-	} else if abs_sin > 1.0 {
-		(Snells::Reflected, -angle)
-	} else {
-		(Snells::Critical, angle.signum() * (PI / 2.0))
-	}
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Snells {
-	Refracted,
-	Critical,
-	Reflected,
 }
