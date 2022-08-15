@@ -1,15 +1,11 @@
-use std::f64::consts::PI;
-
 use crate::paramset::ParamSet;
 
+use ang::Angle;
 use geo::Point;
 use turtle::Turtle;
-use units::{mm_tenths_to_microns, Microns, Radians, RI_AIR};
+use units::{mm_tenths_to_microns, Microns, RI_AIR};
 
-use self::{
-	refract::{denormalise_incidence, normalise_incidence},
-	turtle::QUARTER,
-};
+use self::refract::normalise_incidence;
 
 pub mod geo;
 pub mod refract;
@@ -27,7 +23,7 @@ pub struct Performance {
 
 	/// Average of exit angles (to the normal) for rays that exit at the bottom.
 	///
-	/// In 10000th radians.
+	/// In 10000th Angle.
 	///
 	/// Lower is better.
 	pub exit_angle: u32,
@@ -51,9 +47,9 @@ impl Performance {
 }
 
 const ENTRY_INTERVAL: Microns = 5_000;
-const ANGLE_INTERVAL: Radians = (PI / 180.0) / 5.0;
-const ANGLE_MIN: Radians = denormalise_incidence(-QUARTER);
-const ANGLE_MAX: Radians = denormalise_incidence(QUARTER);
+const ANGLE_INTERVAL: Angle = Angle::Degrees(5.0);
+const ANGLE_MIN: Angle = Angle::Degrees(-90.0);
+const ANGLE_MAX: Angle = Angle::Degrees(90.0);
 
 pub fn raytrace(params: ParamSet) -> Performance {
 	let mut traces = Vec::with_capacity(18960);
@@ -61,7 +57,7 @@ pub fn raytrace(params: ParamSet) -> Performance {
 	let mut entry: Microns = 0;
 	while entry <= ParamSet::WIDTH_TOP {
 		entry += ENTRY_INTERVAL;
-		let mut angle: Radians = ANGLE_MIN;
+		let mut angle: Angle = ANGLE_MIN;
 		while angle <= ANGLE_MAX {
 			angle += ANGLE_INTERVAL;
 			traces.push(trace_one(params, entry, angle));
@@ -69,7 +65,7 @@ pub fn raytrace(params: ParamSet) -> Performance {
 	}
 
 	let total_rays = traces.len();
-	let (bottom_angles, bottom_travel): (Vec<Radians>, Vec<Microns>) = traces
+	let (bottom_angles, bottom_travel): (Vec<Angle>, Vec<Microns>) = traces
 		.iter()
 		.filter_map(|t| {
 			if let Traced::BottomExit { angle, travel } = t {
@@ -81,12 +77,17 @@ pub fn raytrace(params: ParamSet) -> Performance {
 		.unzip();
 	let total_bottomed = bottom_angles.len();
 	let total_travel: Microns = bottom_travel.into_iter().sum();
-	let average_angle: Radians =
-		bottom_angles.iter().map(|a| a.abs()).sum::<Radians>() / (total_bottomed as Radians);
+	let average_angle: Angle = Angle::Radians(
+		bottom_angles
+			.iter()
+			.map(|a| a.abs().in_radians())
+			.sum::<f64>()
+			/ (total_bottomed as f64),
+	);
 
 	Performance {
 		exit_ratio: ((total_bottomed * (u32::MAX as usize)) / total_rays) as _,
-		exit_angle: (average_angle * 10000.0) as _,
+		exit_angle: (average_angle.in_radians() * 10000.0) as _,
 		light_travel: total_travel as _,
 	}
 }
@@ -94,10 +95,10 @@ pub fn raytrace(params: ParamSet) -> Performance {
 #[derive(Clone, Copy, Debug)]
 enum Traced {
 	TopExit,
-	BottomExit { angle: Radians, travel: Microns },
+	BottomExit { angle: Angle, travel: Microns },
 }
 
-fn trace_one(params: ParamSet, entry_point: Microns, entry_angle: Radians) -> Traced {
+fn trace_one(params: ParamSet, entry_point: Microns, entry_angle: Angle) -> Traced {
 	let part_um = mm_tenths_to_microns(params.partitions_thickness);
 	let layer_um = mm_tenths_to_microns(params.layers_thickness).saturating_add(3_000);
 

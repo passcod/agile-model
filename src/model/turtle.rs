@@ -1,15 +1,13 @@
 use std::f64::consts::PI;
 
-use super::{
-	geo::Point,
-	refract::snells,
-	units::{Microns, Radians},
-};
+use ang::Angle;
 
-pub const QUARTER: Radians = PI / 2.0;
-pub const HALF: Radians = PI;
-pub const THREE_QUARTERS: Radians = HALF + QUARTER;
-pub const FULL: Radians = 2.0 * PI;
+use super::{geo::Point, refract::snells, units::Microns};
+
+pub const QUARTER: Angle = Angle::Radians(PI / 2.0);
+pub const HALF: Angle = Angle::Radians(PI);
+pub const THREE_QUARTERS: Angle = Angle::Radians(PI + PI / 2.0);
+pub const FULL: Angle = Angle::Radians(2.0 * PI);
 
 #[derive(Clone, Copy, Default, Debug)]
 pub struct Turtle {
@@ -22,7 +20,7 @@ pub struct Turtle {
 	/// Current direction
 	///
 	/// 0 is up.
-	pub dir: Radians,
+	pub dir: Angle,
 }
 
 impl Turtle {
@@ -50,8 +48,8 @@ impl Turtle {
 		!self.is_going_left() && !self.is_going_right()
 	}
 
-	pub fn turn(&mut self, by: Radians) {
-		self.dir = (self.dir + by) % FULL;
+	pub fn turn(&mut self, by: Angle) {
+		self.dir = (self.dir + by).normalized();
 	}
 
 	/// Recomputes directions from the RI change at a boundary.

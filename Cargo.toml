@@ -6,5 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ang = "0.6.0"
 genevo = "0.7.1"
 smallvec = { version = "1.9.0", features = ["union", "const_generics"] }
