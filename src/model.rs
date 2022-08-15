@@ -43,8 +43,8 @@ impl Performance {
 	}
 }
 
-const ENTRY_INTERVAL: Microns = 1000;
-const ANGLE_INTERVAL: Radians = PI / 180.0;
+const ENTRY_INTERVAL: Microns = 5_000;
+const ANGLE_INTERVAL: Radians = (PI / 180.0) / 5.0;
 const ANGLE_MAX: Radians = PI / 2.0;
 const ANGLE_MIN: Radians = -ANGLE_MAX;
 
