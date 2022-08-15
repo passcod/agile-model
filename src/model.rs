@@ -2,11 +2,13 @@ use std::f64::consts::PI;
 
 use crate::paramset::ParamSet;
 
-use geo::Pos;
+use geo::Point;
+use turtle::Turtle;
 use units::{mm_tenths_to_microns, Microns, Radians, RI_AIR};
 
 pub mod geo;
 pub mod refract;
+pub mod turtle;
 pub mod units;
 
 #[derive(Clone, Copy, Debug)]
@@ -106,9 +108,11 @@ fn trace_one(params: ParamSet, entry_point: Microns, entry_angle: Radians) -> Tr
 	// ...FIXME maybe?
 
 	let mut travel: Microns = 0;
-	let mut ray = Pos {
-		x: entry_point,
-		y: lens_height,
+	let mut ray = Turtle {
+		pos: Point {
+			x: entry_point,
+			y: lens_height,
+		},
 		ri: RI_AIR,
 		dir: entry_angle,
 		going_down: true,
@@ -126,7 +130,7 @@ fn trace_one(params: ParamSet, entry_point: Microns, entry_angle: Radians) -> Tr
 		let so_far = ray.travel_to_next_boundary(boundary_above, boundary_below);
 		travel += so_far;
 
-		if ray.y > lens_height || (ray.y == lens_height && !ray.going_down) {
+		if ray.pos.y > lens_height || (ray.pos.y == lens_height && !ray.going_down) {
 			break Traced::TopExit;
 		}
 
@@ -136,11 +140,11 @@ fn trace_one(params: ParamSet, entry_point: Microns, entry_angle: Radians) -> Tr
 			in_layer = false;
 
 			if ray.going_down {
-				boundary_above = ray.y;
-				boundary_below = ray.y - part_um;
+				boundary_above = ray.pos.y;
+				boundary_below = ray.pos.y - part_um;
 			} else {
-				boundary_above = ray.y + part_um;
-				boundary_below = ray.y;
+				boundary_above = ray.pos.y + part_um;
+				boundary_below = ray.pos.y;
 			}
 		} else {
 			// refract into layer from partition
@@ -148,14 +152,14 @@ fn trace_one(params: ParamSet, entry_point: Microns, entry_angle: Radians) -> Tr
 
 			if ray.going_down {
 				layer += 1;
-				boundary_above = ray.y;
-				boundary_below = ray.y - layer_um;
+				boundary_above = ray.pos.y;
+				boundary_below = ray.pos.y - layer_um;
 			} else if layer == 0 {
 				break Traced::TopExit;
 			} else {
 				layer -= 1;
-				boundary_above = ray.y + layer_um;
-				boundary_below = ray.y;
+				boundary_above = ray.pos.y + layer_um;
+				boundary_below = ray.pos.y;
 			};
 
 			if let Some(ri) = layers.get(layer) {
@@ -168,7 +172,7 @@ fn trace_one(params: ParamSet, entry_point: Microns, entry_angle: Radians) -> Tr
 			}
 		}
 
-		if ray.y == 0 {
+		if ray.pos.y == 0 {
 			break Traced::BottomExit {
 				angle: ray.dir,
 				travel,
